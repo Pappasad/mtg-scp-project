@@ -3,6 +3,7 @@ import gspread_formatting as gf
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import sys
+import operator
 
 # Define the scope of access for the Google Sheets API
 SCOPE = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
@@ -19,6 +20,15 @@ TEMP_PATH = 'code/database.csv'
 # Range in the Google Sheet representing the header row
 HEADER_RANGE = 'A1:I1'
 
+OPERATORS = {
+            '>': operator.gt,
+            '<': operator.lt,
+            '>=': operator.ge,
+            '<=': operator.le,
+            '==': operator.eq,
+            '!=': operator.ne
+}
+
 class CardDatabase:
     def __init__(self, sheet_name):
         """
@@ -28,15 +38,19 @@ class CardDatabase:
         :param sheet_name: Name of the Google Sheet to connect to.
         """
         # Authorize and access the Google Sheet
-        self.client = gspread.authorize(CREDS)
-        self.spreadsheet = self.client.open(sheet_name)
-        self.sheet = self.spreadsheet.sheet1
+        try:
+            self.client = gspread.authorize(CREDS)
+            self.spreadsheet = self.client.open(sheet_name)
+            self.sheet = self.spreadsheet.sheet1
 
-        # Load data from the sheet into a pandas DataFrame
-        data = self.sheet.get_all_values()
-        self.columns = data[0]  # Extract column headers
-        rows = data[1:]  # Extract data rows
-        self._df = pd.DataFrame(rows, columns=self.columns, dtype=object)
+            # Load data from the sheet into a pandas DataFrame
+            data = self.sheet.get_all_values()
+            self.columns = data[0]  # Extract column headers
+            rows = data[1:]  # Extract data rows
+            self._df = pd.DataFrame(rows, columns=self.columns, dtype=object)
+        except Exception as e:
+            print("Couldn't get online sheet because", e)
+            self._df = pd.read_csv(TEMP_PATH)
 
     def update(self):
         """
@@ -93,6 +107,13 @@ class CardDatabase:
 
         print("Database Updated.")
 
+    def sort(self, by, ascending=True):
+        try:
+            self._df = self._df.sort_values(by=by, ascending=ascending)
+        except:
+            print("\n<<<ERROR>>> database.py -> sort: Couldn't sort by", by)
+            sys.exit()
+
     def save(self, path=TEMP_PATH):
         """
         Saves the DataFrame to a CSV file at the specified path.
@@ -123,8 +144,17 @@ class CardDatabase:
 
         :param idx: Column name, row index, or primary key.
         """
+        
+
         if idx in self.columns:  # Access column by name
             return self._df[idx]
+        elif isinstance(idx, tuple):
+            try:
+                idx, op, thres = idx
+                return self._df[OPERATORS[op](self._df[idx].astype(type(thres)), thres)]
+            except:
+                print(f"\nCan't get database by cond because '{idx} {op} {thres}'")
+                raise
         elif isinstance(idx, (int, slice)):  # Access row by index
             try:
                 return self._df.iloc[idx]
@@ -140,6 +170,7 @@ class CardDatabase:
                 print(f"\n<<<ERROR>>> database: Could not find card '{idx}' in the database\n")
                 sys.exit()
 
+
     def __setitem__(self, idx, value):
         """
         Updates or inserts a row in the DataFrame based on the given index.
@@ -147,6 +178,12 @@ class CardDatabase:
         :param idx: Row index or primary key.
         :param value: Row data to be inserted or updated.
         """
+        if isinstance(value, dict):
+            new_val = pd.Series(index=list(self.columns), dtype=object)
+            for key, val in value.items():
+                if key in new_val.index:
+                    new_val[key] = val
+
         if isinstance(idx, int):  # Update row by index
             self._df.iloc[idx] = value
         else:  # Update or insert row by primary key
