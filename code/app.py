@@ -167,7 +167,11 @@ def addAutoThemes():
 if __name__ == '__main__':
     # Entry point for standalone execution
     init()
-    launchManager(sys.argv)
+    cards = Cards.from_data(Database)
+    misters = [card for card in cards if 'Mr.' in card['Title']]
+    print(misters[0]['Rules Text'].lower(), '\n\n')
+    print(misters[0].getThemesMan())
+
 elif __name__.lower() == 'manager':
     # Entry point for module execution
     init()

@@ -224,7 +224,7 @@ class Cards:
                 rules = self.remFlavor().lower()
 
                 #Wondertainment
-                if set(self['Color Identity']).issubset(REVERSE_MAP['Jeskai']):
+                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Jeskai']):
                     if anyIn(rules, 'wonder', "you own but don't control"):
                         themes.add('Wondertainment')
 
@@ -343,6 +343,18 @@ class Cards:
             Automatically assigns themes to the card (not yet implemented).
             """
             return "Not Yet Implemented"
+        
+        def __repr__(self):
+            s = self['Title']
+            if 'Mana Cost' in self:
+                s += '      ' + self['Mana Cost']
+            if 'Type' in self:
+                s += f"\n{self['Type']}\n"
+            if 'Rules Text' in self:
+                s += self['Rules Text'] + '\n'
+            if 'Power/Toughness' in self:
+                s += f"[{self['Power/Toughness']}]\n"
+            return s
 
     def __init__(self, path, themes='Auto'):
         """
