@@ -6,21 +6,45 @@ import img_manager as im
 from ui import Interface
 from datetime import datetime
 
+# Name of the Google Sheet to use as the database
 SHEET = "mtgscp"
+
+# Directory for custom card data
 CC_DIR = 'cc'
+
+# Themes used in the application
 THEMES = ['Sarkic', 'Wondertainment', 'Foundation', 'Goc', 'AWCY?', 'Fifthist', 'MC&D', 'Insurgency', 'Broken-God', 'Serpents', 'Removal', 'Ramp', 'Card-Draw']
 
 def init():
+    """
+    Initializes the global database object by connecting to the specified Google Sheet.
+    """
     global Database
     Database = CardDatabase(SHEET)
 
 def getCards(key):
+    """
+    Retrieves cards from the database based on a specific key or filter condition.
+
+    :param key: Key or filter condition to query the database.
+    :return: Cards object containing the filtered data.
+    """
     return Cards.from_data(Database[key])
 
 def timeString():
+    """
+    Generates a timestamp string for logging purposes.
+
+    :return: Current timestamp as a formatted string.
+    """
     return datetime.now().strftime("<%a %m-%d-%Y %I:%M %p> ")
 
 def launchManager(args):
+    """
+    Launches the graphical user interface (GUI) for managing card data.
+
+    :param args: Command-line arguments.
+    """
     from PySide6.QtWidgets import QApplication
     app = QApplication(args)
 
@@ -30,7 +54,7 @@ def launchManager(args):
     interface.addButton("Color ID Stats", getColorIDStats)
     interface.addButton("Theme Stats", getThemeStats)
     interface.addButton("Update Themes Manual", addManualThemes)
-    #interface.addButton("Update Themes Auto", addAutoThemes)
+    # interface.addButton("Update Themes Auto", addAutoThemes)
     interface.addButton("Reload", reload)
     interface.addButton("Type Stats", getTypeStats)
 
@@ -40,22 +64,34 @@ def launchManager(args):
 
 ### Functions For Manager.exe ###
 def reload():
+    """
+    Reloads the database and updates the application state.
+    """
     print(timeString() + "Reloading...")
     init()
     print("Done.")
 
 def fixImgs():
+    """
+    Corrects the file paths of images by renaming them to a consistent format.
+    """
     print(timeString() + "Correcting Img Paths...")
     im.correctImgPaths()
     print("Done.")
 
 def findWeirdge():
+    """
+    Identifies and logs discrepancies between the database and image files.
+    """
     print(timeString() + "Finding Incongruencies...")
     titles = list(Database['Title'])
     im.findIncongruencies(titles)
     print("Done.")
 
 def getColorIDStats():
+    """
+    Logs the count of cards for each color identity.
+    """
     print(timeString() + "Getting Color ID Stats...")
     for cid in IDENTITY_MAP.values():
         num = len(getCards(('Color Identity', '==', cid)))
@@ -63,6 +99,9 @@ def getColorIDStats():
     print("Done.")
 
 def getThemeStats():
+    """
+    Logs the count of cards for each theme.
+    """
     print(timeString() + "Getting Theme Stats...")
     for theme in THEMES:
         num = len(getCards(('Themes', '==', theme)))
@@ -70,6 +109,9 @@ def getThemeStats():
     print("Done.")
 
 def getTypeStats():
+    """
+    Logs the count of cards for each type, including a count of non-legendary cards.
+    """
     print(timeString() + "Getting Type Stats...")
     types = {}
     for type_str in Database['Type']:
@@ -88,6 +130,9 @@ def getTypeStats():
     print("Done.")
 
 def addManualThemes():
+    """
+    Updates the database with manually assigned themes for cards.
+    """
     print(timeString() + "Adding Manual Themes...")
     global Database
     Database = CardDatabase(SHEET)
@@ -102,6 +147,9 @@ def addManualThemes():
     print("Done.")
 
 def addAutoThemes():
+    """
+    Updates the database with automatically assigned themes for cards (not implemented).
+    """
     print(timeString() + "Adding Auto Themes...")
     global Database
     Database = CardDatabase(SHEET)
@@ -114,13 +162,13 @@ def addAutoThemes():
 
     Database.update()
     print("Done.")
-
 ### End of Functions For Manager.exe ###
 
-
 if __name__ == '__main__':
+    # Entry point for standalone execution
     init()
     launchManager(sys.argv)
 elif __name__.lower() == 'manager':
+    # Entry point for module execution
     init()
     launchManager(sys.argv)

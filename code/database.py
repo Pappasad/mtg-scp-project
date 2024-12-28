@@ -21,16 +21,21 @@ TEMP_PATH = 'code/database.csv'
 # Range in the Google Sheet representing the header row
 HEADER_RANGE = 'A1:I1'
 
+# Supported comparison operators for database queries
 OPERATORS = {
-            '>': operator.gt,
-            '<': operator.lt,
-            '>=': operator.ge,
-            '<=': operator.le,
-            '==': operator.eq,
-            '!=': operator.ne
+    '>': operator.gt,
+    '<': operator.lt,
+    '>=': operator.ge,
+    '<=': operator.le,
+    '==': operator.eq,
+    '!=': operator.ne
 }
 
 class CardDatabase:
+    """
+    Handles operations on the card database, including querying, updating, and synchronizing
+    with a Google Sheet. Uses pandas for internal data management.
+    """
     def __init__(self, sheet_name):
         """
         Initializes the CardDatabase object by connecting to a Google Sheet
@@ -38,7 +43,6 @@ class CardDatabase:
 
         :param sheet_name: Name of the Google Sheet to connect to.
         """
-        # Authorize and access the Google Sheet
         try:
             self.client = gspread.authorize(CREDS)
             self.spreadsheet = self.client.open(sheet_name)
@@ -50,7 +54,7 @@ class CardDatabase:
             rows = data[1:]  # Extract data rows
             self._df = pd.DataFrame(rows, columns=self.columns, dtype=object)
         except Exception as e:
-            print("Couldn't get online sheet")
+            print("Couldn't get online sheet, loading internal csv...")
             self.load()
 
     def update(self):
@@ -112,6 +116,14 @@ class CardDatabase:
             print("Can't access online database but saved internally")
 
     def getAll(self, key: str, values: str, op='=='):
+        """
+        Retrieves rows from the DataFrame that satisfy a condition on a specified column.
+
+        :param key: Column name to apply the condition to.
+        :param values: Values to compare against, separated by spaces.
+        :param op: Comparison operator, e.g., '==', '!='. Defaults to '=='.
+        :return: Filtered DataFrame containing matching rows.
+        """
         values = values.strip().split()
 
         if op == '==':
@@ -127,10 +139,16 @@ class CardDatabase:
         return self._df[mask]
 
     def sort(self, by, ascending=True):
+        """
+        Sorts the DataFrame by a specified column.
+
+        :param by: Column name to sort by.
+        :param ascending: Whether to sort in ascending order. Defaults to True.
+        """
         try:
             self._df = self._df.sort_values(by=by, ascending=ascending)
-        except:
-            print("\n<<<ERROR>>> database.py -> sort: Couldn't sort by", by)
+        except Exception as e:
+            print(f"\n<<<ERROR>>> database.py -> sort: Couldn't sort by {by}")
             sys.exit()
 
     def save(self, path=TEMP_PATH):
@@ -167,30 +185,29 @@ class CardDatabase:
 
         if idx in self.columns:  # Access column by name
             return self._df[idx]
-        elif isinstance(idx, tuple):
+        elif isinstance(idx, tuple): # Access row by condition
             try:
                 idx, op, thres = idx
                 if isinstance(thres, str):
                     return self.getAll(idx, thres, op)
                 return self._df[OPERATORS[op](self._df[idx].astype(type(thres)), thres)]
-            except:
+            except Exception as e:
                 print(f"\nCan't get database by cond because '{idx} {op} {thres}'")
                 raise
-        elif isinstance(idx, (int, slice)):  # Access row by index
+        elif isinstance(idx, (int, slice)):  # Access row by index or rows by slice
             try:
                 return self._df.iloc[idx]
-            except:
+            except Exception as e:
                 print(f"\n<<<ERROR>>> database: Only has {len(self)} items but requested item {idx+1}\n")
                 sys.exit()
-        else:  # Access row by primary key
+        else:  # Access row by card title
             try:
                 if idx not in self._df[self.columns[0]].to_list():
                     raise
                 return self._df.loc[self._df[self.columns[0]] == idx].iloc[0]
-            except:
+            except Exception as e:
                 print(f"\n<<<ERROR>>> database: Could not find card '{idx}' in the database\n")
                 sys.exit()
-
 
     def __setitem__(self, idx, value):
         """
@@ -225,14 +242,17 @@ class CardDatabase:
         return str(self._df)
     
     def __iter__(self):
+        """
+        Allows iteration over the rows of the DataFrame.
+        """
         return self._df.iterrows()
 
 if __name__ == '__main__':
     # Example usage of the CardDatabase class
     test = CardDatabase("mtgscp")
     new_row = pd.Series(index=test.columns, dtype=object)
-    new_row['Card'] = 'cumguzzler420'  # Example card data
-    test['cumguzzler420'] = new_row  # Add the new row by primary key
+    new_row['Card'] = 'TestCard'  # Example card data
+    test['TestCard'] = new_row  # Add the new row by primary key
     test[10] = new_row  # Add the new row by index
     print(test)
     test.update()

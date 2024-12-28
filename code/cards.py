@@ -3,6 +3,7 @@ import re
 import sys
 import pandas as pd
 
+# Map of color identities to their descriptive names
 IDENTITY_MAP = {
     '': 'Colorless',
     'w': 'White',
@@ -37,22 +38,67 @@ IDENTITY_MAP = {
     'gruw': 'Non-Black',
     'bgruw': 'Wubrg'
 }
+
+# Reverse mapping of color descriptions to color identities
 REVERSE_MAP = {value: key for key, value in IDENTITY_MAP.items()}
 
+# Utility functions to check substrings in strings
 def anyIn(string: str, *substrings):
+    """
+    Checks if any of the substrings are present in the given string.
+
+    :param string: The string to search.
+    :param substrings: Substrings to check for.
+    :return: True if any substring is found, False otherwise.
+    """
     return any(sub in string for sub in substrings)
 
 def allIn(string: str, *substrings):
+    """
+    Checks if all of the substrings are present in the given string.
+
+    :param string: The string to search.
+    :param substrings: Substrings to check for.
+    :return: True if all substrings are found, False otherwise.
+    """
     return all(sub in string for sub in substrings)
 
 def noneIn(string: str, *substrings):
+    """
+    Checks if none of the substrings are present in the given string.
+
+    :param string: The string to search.
+    :param substrings: Substrings to check for.
+    :return: True if no substrings are found, False otherwise.
+    """
     return not anyIn(string, *substrings)
 
 class Cards:
+    """
+    Represents a collection of cards and provides utilities for managing them.
 
+    The Cards class acts as a container for all the card data used in the application.
+    It loads card information from JSON files or DataFrames, processes their attributes,
+    and supports querying and theme assignment. This class is central to the application,
+    enabling interaction with the card database and performing operations such as
+    retrieving, iterating, and filtering cards based on specific criteria.
+    """
     class Card(dict):
+        """
+        Represents a single card and its attributes.
+
+        Each card is a dictionary-like object with additional methods to calculate
+        derived properties such as mana value, color, and themes. The Card class
+        encapsulates the logic for handling individual card data.
+        """
 
         def __init__(self, info: dict, themes=None):
+            """
+            Initializes a card instance with given information and optionally assigns themes.
+
+            :param info: Dictionary containing card information.
+            :param themes: Method for assigning themes ('Manual' or 'Auto').
+            """
             super().__init__()
             for key, value in info.items():
                 if isinstance(value, dict):
@@ -64,7 +110,7 @@ class Cards:
                                 value['text'] = value['text'].replace(to, '')
                             value['text'] = value['text'].replace('{', '')
                             value['text'] = value['text'].replace('}', '')
-            
+
                         self[value['name']] = value['text']
 
                 elif isinstance(value, str):
@@ -80,20 +126,35 @@ class Cards:
                     self['Themes'] = self.getThemesAuto()
 
         def getManaValue(self):
+            """
+            Calculates the mana value (converted mana cost) of the card.
+
+            :return: Total mana value as an integer.
+
+            Example:
+                If the mana cost is "{3}{U}{U}", the mana value is 5.
+                If the mana cost is "{2/W}{2/U}{R}", the mana value is 5 ("{2/W}" adds 2).
+                If the mana cost is "{X}{G}", "X" contributes 0 unless specified elsewhere.
+            """
             mv = 0
             if 'Mana Cost' in self:
                 cost = self['Mana Cost']
                 pips = re.findall(r'\{(.*?)\}', cost)
                 for pip in pips:
                     if str.isdigit(pip):
-                        mv += int(pip)
+                        mv += int(pip)  # Add numerical values directly
                     elif '2' in pip:
-                        mv += 2
+                        mv += 2  # Hybrid mana with "2"
                     else:
-                        mv += 1
+                        mv += 1  # Other single-mana symbols add 1
             return mv
 
         def getColor(self):
+            """
+            Determines the primary color of the card based on its mana cost.
+
+            :return: Color of the card as a string.
+            """
             color = 'Colorless'
             if 'Mana Cost' in self:
                 cost = self['Mana Cost']
@@ -105,6 +166,11 @@ class Cards:
             return color
 
         def getColorIdentity(self):
+            """
+            Determines the color identity of the card based on its mana cost and rules text.
+
+            :return: Color identity as a string.
+            """
             ci = set()
             if 'Mana Cost' in self:
                 cost = self['Mana Cost']
@@ -124,6 +190,11 @@ class Cards:
             return ci
         
         def remFlavor(self):
+            """
+            Removes flavor text from the rules text of the card.
+
+            :return: Rules text without flavor text.
+            """
             try:
                 rules = self['Rules Text']
                 if '{flavor}' in rules:
@@ -135,9 +206,23 @@ class Cards:
                 sys.exit()
 
         def getThemesMan(self):
+            """
+            Assigns themes to the card manually based on predefined rules.
+
+            :return: Themes as a space-separated string or 'None' if no themes are assigned.
+
+            Examples of theme assignment rules:
+                - Cards with "wonder" in their rules text and a color identity subset of Jeskai are assigned the "Wondertainment" theme.
+                - Sarkic themes are assigned to cards with mechanics like "sacrifice a creature" or references to "+1/+1 counters" if their color identity fits Jund.
+                - Cards containing keywords like "treasure" or "haste" with Mardu color identity are assigned the "MC&D" theme.
+                - Cards mentioning "return" and "graveyard" with Sultai color identity are labeled with the "Serpents" theme.
+
+            These rules are designed to group cards into thematic categories based on their mechanics and color identity.
+            """
             themes = set()
             if 'Rules Text' in self:
                 rules = self.remFlavor().lower()
+
                 #Wondertainment
                 if set(self['Color Identity']).issubset(REVERSE_MAP['Jeskai']):
                     if anyIn(rules, 'wonder', "you own but don't control"):
@@ -252,25 +337,20 @@ class Cards:
                 return 'None'
             else:
                 return ' '.join(sorted(theme for theme in themes))
-                                
-        #TODO
+
         def getThemesAuto(self):
+            """
+            Automatically assigns themes to the card (not yet implemented).
+            """
             return "Not Yet Implemented"
 
-
-
-
-
-        def __repr__(self):
-            s = f'{self['Title']}  {self['Mana Cost']}\n'
-            s += f'{self['Type']}\n'
-            s += f'{self['Rules Text']}'
-            if 'Power/Toughness' in self:
-                if self['Power/Toughness'] != '':
-                    s += f'\n[{self['Power/Toughness']}]'
-            return s
-
     def __init__(self, path, themes='Auto'):
+        """
+        Initializes the Cards object by loading card data from a file.
+
+        :param path: Path to the card data file.
+        :param themes: Method for assigning themes ('Manual' or 'Auto').
+        """
         self.path = path
         with open(path, 'r', encoding='utf-8') as f:
             self.raw = json.load(f)
@@ -284,6 +364,12 @@ class Cards:
 
     @classmethod
     def from_data(cls, df):
+        """
+        Creates a Cards object from a pandas DataFrame.
+
+        :param df: DataFrame containing card data.
+        :return: Cards object.
+        """
         if not isinstance(df, pd.DataFrame):
             df = df._df
         instance = cls.__new__(cls)
@@ -296,12 +382,20 @@ class Cards:
 
         return instance
 
-
     def printCards(self):
+        """
+        Prints the details of all cards in the collection.
+        """
         for card in self.cards.values():
             print(card, '\n')
 
     def __getitem__(self, idx):
+        """
+        Retrieves a card by index or name.
+
+        :param idx: Index or name of the card.
+        :return: The corresponding Card object.
+        """
         try:
             if isinstance(idx, int):
                 return self.cards.values()[idx]
@@ -312,21 +406,27 @@ class Cards:
             raise
 
     def __iter__(self):
+        """
+        Returns an iterator for the card collection.
+        """
         return self.cards.values().__iter__()
 
     def __repr__(self):
+        """
+        Returns a string representation of the Cards object.
+        """
         s = '----------------------------------\n'
         s += '\n'.join(list(self.cards.keys()))
         s += '\n---------------------------------'
         return s
     
     def __len__(self):
+        """
+        Returns the number of cards in the collection.
+        """
         return len(self.cards)
 
-
-
-
-
 if __name__ == '__main__':
+    # Example usage of the Cards class
     c = Cards('code/Leaders.cardconjurer')
     print(c['The O5 Council'])
