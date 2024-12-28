@@ -2,9 +2,10 @@ import os
 
 # Directories containing card images
 CARD_DIR = 'cards'
-CARD_DIRS = [CARD_DIR] + [os.path.join(CARD_DIR, dirname) for dirname in os.listdir(CARD_DIR) if os.path.isdir(dirname)]
+CARD_DIRS = [CARD_DIR] + [os.path.join(CARD_DIR, dirname) for dirname in os.listdir(CARD_DIR) if os.path.isdir(os.path.join(CARD_DIR, dirname))]
 
-def correctImgPaths(dirs=CARD_DIRS, exclude={'tokens'}):
+def correctImgPaths(dirs=CARD_DIRS):
+    print(CARD_DIRS)
     """
     Corrects the file paths of images in the specified directories by removing 
     underscores and trimming unnecessary text in parentheses.
@@ -12,7 +13,7 @@ def correctImgPaths(dirs=CARD_DIRS, exclude={'tokens'}):
     :param dirs: List of directories to process.
     """
     for img_dir in dirs:
-        if os.path.exists(img_dir) and img_dir not in exclude:
+        if os.path.exists(img_dir):
             for img_file in (file for file in os.listdir(img_dir) if file.endswith('.png')):
 
                 # Remove underscores from file names
@@ -33,7 +34,7 @@ def correctImgPaths(dirs=CARD_DIRS, exclude={'tokens'}):
                     os.rename(old_path, new_path)
  
 
-def findIncongruencies(titles, dirs=CARD_DIRS):
+def findIncongruencies(titles, dirs=CARD_DIRS, exclude={os.path.join(CARD_DIR, 'tokens')}):
     """
     Identifies inconsistencies between the titles in the database and the image files
     in the specified directories.
@@ -46,7 +47,7 @@ def findIncongruencies(titles, dirs=CARD_DIRS):
 
     # Collect names of image files from directories
     for img_dir in dirs:
-        if os.path.exists(img_dir):
+        if os.path.exists(img_dir) and img_dir not in exclude:
             for name in (file.replace('.png', '') for file in os.listdir(img_dir) if file.endswith('.png')):
                 names_from_folders.add(name)
 

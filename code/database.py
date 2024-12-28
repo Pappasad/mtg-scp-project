@@ -65,7 +65,6 @@ class CardDatabase:
         # Sort the DataFrame and fill empty cells
         self._df.sort_values(by=self.columns[0], ascending=True, inplace=True)
         self._df = self._df.fillna('')
-        self._df = self._df.loc[~self._df['Type'].str.contains('Token|Dimension', na=False)]
         self.save()  # Save the current state to a CSV file
 
         try: 

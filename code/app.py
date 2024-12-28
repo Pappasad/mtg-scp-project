@@ -164,15 +164,20 @@ def addAutoThemes():
     print("Done.")
 ### End of Functions For Manager.exe ###
 
-if __name__ == '__main__':
-    # Entry point for standalone execution
-    init()
+
+def test():
     cards = Cards.from_data(Database)
     misters = [card for card in cards if 'Mr.' in card['Title']]
     print(misters[0]['Rules Text'].lower(), '\n\n')
     print(misters[0].getThemesMan())
 
-elif __name__.lower() == 'manager':
-    # Entry point for module execution
+
+if __name__ == '__main__':
+    # Entry point for standalone execution
     init()
-    launchManager(sys.argv)
+    if len(sys.argv) <= 1:
+        test()
+    elif sys.argv[1] == 'manager':
+        launchManager(sys.argv)
+   
+

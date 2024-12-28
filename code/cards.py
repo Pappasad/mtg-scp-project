@@ -219,6 +219,11 @@ class Cards:
 
             These rules are designed to group cards into thematic categories based on their mechanics and color identity.
             """
+            if 'Type' not in self:
+                return 'N/A'
+            if anyIn(self['Type'], 'Token', 'Dimension'):
+                return 'N/A'
+            
             themes = set()
             if 'Rules Text' in self:
                 rules = self.remFlavor().lower()
@@ -368,11 +373,17 @@ class Cards:
             self.raw = json.load(f)
 
         self.cards = {}
+        self.tokens = {}
 
         for raw in self.raw:
             name = raw['key']
             info = raw['data']['text']
-            self.cards[name] = self.Card(info, themes)
+            card = self.Card(info, themes)
+            if 'Type' in card:
+                if 'Token' in card['Type']:
+                    self.tokens[name] = card
+                else:
+                    self.cards[name] = card
 
     @classmethod
     def from_data(cls, df):
