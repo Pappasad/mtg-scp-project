@@ -1,9 +1,10 @@
 import os
 
 # Directories containing card images
-CARD_DIRS = ['orgs and commanders', 'transforms', 'dim', 'scp']
+CARD_DIR = 'cards'
+CARD_DIRS = [CARD_DIR] + [os.path.join(CARD_DIR, dirname) for dirname in os.listdir(CARD_DIR) if os.path.isdir(dirname)]
 
-def correctImgPaths(dirs=CARD_DIRS):
+def correctImgPaths(dirs=CARD_DIRS, exclude={'tokens'}):
     """
     Corrects the file paths of images in the specified directories by removing 
     underscores and trimming unnecessary text in parentheses.
@@ -11,7 +12,7 @@ def correctImgPaths(dirs=CARD_DIRS):
     :param dirs: List of directories to process.
     """
     for img_dir in dirs:
-        if os.path.exists(img_dir):
+        if os.path.exists(img_dir) and img_dir not in exclude:
             for img_file in (file for file in os.listdir(img_dir) if file.endswith('.png')):
 
                 # Remove underscores from file names

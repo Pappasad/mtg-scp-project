@@ -3,7 +3,7 @@
  True,
  False,
  False,
- 'c:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
+ 'C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
  'Technology\\Documents\\Python '
  'Scripts\\mtg-scp-project\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\images\\icon-console.ico',
  None,
@@ -67,7 +67,7 @@
    'Scripts\\mtg-scp-project\\build\\manager\\localpycs\\pyimod04_pywin32.pyc',
    'PYMODULE'),
   ('pyiboot01_bootstrap',
-   'c:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
+   'C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
    'Technology\\Documents\\Python '
    'Scripts\\mtg-scp-project\\.venv\\Lib\\site-packages\\PyInstaller\\loader\\pyiboot01_bootstrap.py',
    'PYSOURCE'),
@@ -80,35 +80,35 @@
    'C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
    'Technology\\Documents\\Python Scripts\\mtg-scp-project\\manager.py',
    'PYSOURCE'),
-  ('python312.dll',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\python312.dll',
+  ('python311.dll',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\python311.dll',
    'BINARY'),
   ('_decimal.pyd',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_decimal.pyd',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\DLLs\\_decimal.pyd',
    'EXTENSION'),
   ('_hashlib.pyd',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_hashlib.pyd',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\DLLs\\_hashlib.pyd',
    'EXTENSION'),
   ('_lzma.pyd',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_lzma.pyd',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\DLLs\\_lzma.pyd',
    'EXTENSION'),
   ('_bz2.pyd',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_bz2.pyd',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\DLLs\\_bz2.pyd',
    'EXTENSION'),
   ('unicodedata.pyd',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\unicodedata.pyd',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\DLLs\\unicodedata.pyd',
    'EXTENSION'),
   ('select.pyd',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\select.pyd',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\DLLs\\select.pyd',
    'EXTENSION'),
   ('_socket.pyd',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_socket.pyd',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\DLLs\\_socket.pyd',
    'EXTENSION'),
   ('VCRUNTIME140.dll',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\VCRUNTIME140.dll',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\VCRUNTIME140.dll',
    'BINARY'),
   ('libcrypto-3.dll',
-   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\libcrypto-3.dll',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\DLLs\\libcrypto-3.dll',
    'BINARY'),
   ('base_library.zip',
    'C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
@@ -118,10 +118,10 @@
  [],
  False,
  False,
- 1735398612,
+ 1735403125,
  [('run.exe',
-   'c:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
+   'C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
    'Technology\\Documents\\Python '
    'Scripts\\mtg-scp-project\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',
    'EXECUTABLE')],
- 'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python312\\python312.dll')
+ 'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\python311.dll')

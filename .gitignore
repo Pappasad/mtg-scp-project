@@ -4,3 +4,14 @@
 *.csv
 *.pdn
 *.txt
+!requirements.txt
+*.jpg
+*.jpeg
+*.webp
+*.ttf
+.venv/
+dim/
+fonts/
+logs/
+symbolsetc/
+cards/*
