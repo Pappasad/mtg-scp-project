@@ -5,7 +5,6 @@ CARD_DIR = 'cards'
 CARD_DIRS = [CARD_DIR] + [os.path.join(CARD_DIR, dirname) for dirname in os.listdir(CARD_DIR) if os.path.isdir(os.path.join(CARD_DIR, dirname))]
 
 def correctImgPaths(dirs=CARD_DIRS):
-    print(CARD_DIRS)
     """
     Corrects the file paths of images in the specified directories by removing 
     underscores and trimming unnecessary text in parentheses.

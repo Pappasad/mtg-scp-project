@@ -8,7 +8,7 @@ install = ' install -r requirements.txt'
 
 if not os.path.exists(venv_dir):
     print("Creating venv...")
-    subprocess.check_call([sys.executable, '-m', 'venv', venv_dir])
+    subprocess.check_call(['python', '-m', 'venv', venv_dir])
     print("Created venv.")
 else:
     print("Venv exists.")

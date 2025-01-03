@@ -3,17 +3,9 @@
  ['C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
   'Technology\\Documents\\Python Scripts\\mtg-scp-project'],
  [],
- [('C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
-   'Technology\\Documents\\Python '
-   'Scripts\\mtg-scp-project\\.venv\\Lib\\site-packages\\numpy\\_pyinstaller',
-   0),
-  ('C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
-   'Technology\\Documents\\Python '
-   'Scripts\\mtg-scp-project\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks',
+ [('C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks',
    -1000),
-  ('C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
-   'Technology\\Documents\\Python '
-   'Scripts\\mtg-scp-project\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib',
+  ('C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\_pyinstaller_hooks_contrib',
    -1000)],
  {},
  [],
@@ -26,9 +18,7 @@
  '3.11.6 (tags/v3.11.6:8b6ee5b, Oct  2 2023, 14:57:12) [MSC v.1935 64 bit '
  '(AMD64)]',
  [('pyi_rth_inspect',
-   'C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '
-   'Technology\\Documents\\Python '
-   'Scripts\\mtg-scp-project\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_inspect.py',
+   'C:\\Users\\pappasad\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_inspect.py',
    'PYSOURCE'),
   ('setup',
    'C:\\Users\\pappasad\\OneDrive - Rose-Hulman Institute of '

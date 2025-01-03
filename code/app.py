@@ -95,7 +95,7 @@ def getColorIDStats():
     print(timeString() + "Getting Color ID Stats...")
     for cid in IDENTITY_MAP.values():
         num = len(getCards(('Color Identity', '==', cid)))
-        print(f"{num} {cid}")
+        print(f"\t{num} {cid}")
     print("Done.")
 
 def getThemeStats():
@@ -126,7 +126,7 @@ def getTypeStats():
     types = dict(sorted(types.items()))
 
     for k, v in types.items():
-        print(f"{v} {k}")
+        print(f"\t{v} {k}")
     print("Done.")
 
 def addManualThemes():
