@@ -70,9 +70,10 @@ def getCardInfo(interface):
         name = interface.input
         card = Database[name]
         for key, val in card.items():
-            print(f'\t{key}: {val}')
+            if key != 'Rules Text':
+                print(f'\t{key}: {val}')
     except Exception as e:
-        print(f"\tCant get {name} because of:\n\t{e}")
+        print(f"Cant get card :'{name}'")
     print('Done.')
 
 def reload():

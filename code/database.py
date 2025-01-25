@@ -206,7 +206,6 @@ class CardDatabase:
                 return self._df.loc[self._df[self.columns[0]] == idx].iloc[0]
             except Exception as e:
                 print(f"\n<<<ERROR>>> database: Could not find card '{idx}' in the database\n")
-                sys.exit()
 
     def __setitem__(self, idx, value):
         """
