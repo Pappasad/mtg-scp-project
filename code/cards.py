@@ -2,6 +2,7 @@ import json
 import re
 import sys
 import pandas as pd
+import os
 
 # Map of color identities to their descriptive names
 IDENTITY_MAP = {
@@ -379,6 +380,7 @@ class Cards:
             name = raw['key']
             info = raw['data']['text']
             card = self.Card(info, themes)
+            card['CC'] = os.path.basename(self.path)
             if 'Type' in card:
                 if 'Token' in card['Type']:
                     self.tokens[name] = card

@@ -72,8 +72,17 @@ class Interface(Widgets.QMainWindow):
         self.output_box.setSizePolicy(Widgets.QSizePolicy.Policy.Expanding, Widgets.QSizePolicy.Policy.Expanding)
         self.layout.addWidget(self.output_box)
 
+        self.input_box = Widgets.QLineEdit()
+        self.input_box.setPlaceholderText('')
+        self.input_box.setObjectName('Input')
+        self.layout.addWidget(self.input_box)
+
         # Option to save logs when closing
         self.save = save_logs
+
+    @property
+    def input(self):
+        return self.input_box.text()
 
     def show(self):
         """

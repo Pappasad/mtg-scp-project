@@ -19,7 +19,7 @@ CREDS = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_PATH, SCOPE
 TEMP_PATH = 'code/database.csv'
 
 # Range in the Google Sheet representing the header row
-HEADER_RANGE = 'A1:I1'
+HEADER_RANGE = 'A1:J1'
 
 # Supported comparison operators for database queries
 OPERATORS = {
@@ -220,6 +220,7 @@ class CardDatabase:
             for key, val in value.items():
                 if key in new_val.index:
                     new_val[key] = val
+            value = new_val
 
         if isinstance(idx, int):  # Update row by index
             self._df.iloc[idx] = value

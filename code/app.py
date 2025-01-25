@@ -57,12 +57,24 @@ def launchManager(args):
     # interface.addButton("Update Themes Auto", addAutoThemes)
     interface.addButton("Reload", reload)
     interface.addButton("Type Stats", getTypeStats)
+    interface.addButton('Get Card', getCardInfo, interface)
 
     interface.show()
 
     sys.exit(app.exec())
 
 ### Functions For Manager.exe ###
+def getCardInfo(interface):
+    print(timeString())
+    try:
+        name = interface.input
+        card = Database[name]
+        for key, val in card.items():
+            print(f'\t{key}: {val}')
+    except Exception as e:
+        print(f"\tCant get {name} because of:\n\t{e}")
+    print('Done.')
+
 def reload():
     """
     Reloads the database and updates the application state.
@@ -142,6 +154,7 @@ def addManualThemes():
 
         for card in cards:
             Database[card['Title']] = card
+            
 
     Database.update()
     print("Done.")
