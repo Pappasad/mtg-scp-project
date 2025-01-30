@@ -1,5 +1,4 @@
 import PySide6.QtWidgets as Widgets
-from PySide6.QtCore import Qt
 import sys
 from functools import partial
 from datetime import datetime
@@ -66,12 +65,6 @@ class Interface(Widgets.QMainWindow):
         self.button_layout = Widgets.QHBoxLayout()
         self.layout.addLayout(self.button_layout)
 
-        # Text output box for displaying messages
-        self.output_box = Widgets.QTextEdit()
-        self.output_box.setReadOnly(True)
-        self.output_box.setSizePolicy(Widgets.QSizePolicy.Policy.Expanding, Widgets.QSizePolicy.Policy.Expanding)
-        self.layout.addWidget(self.output_box)
-
         self.input_box = Widgets.QLineEdit()
         self.input_box.setPlaceholderText('')
         self.input_box.setObjectName('Input')
@@ -79,6 +72,13 @@ class Interface(Widgets.QMainWindow):
 
         # Option to save logs when closing
         self.save = save_logs
+
+    def initialize(self):
+        # Text output box for displaying messages
+        self.output_box = Widgets.QTextEdit()
+        self.output_box.setReadOnly(True)
+        self.output_box.setSizePolicy(Widgets.QSizePolicy.Policy.Expanding, Widgets.QSizePolicy.Policy.Expanding)
+        self.layout.addWidget(self.output_box)
 
     @property
     def input(self):

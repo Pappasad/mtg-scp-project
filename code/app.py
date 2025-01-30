@@ -5,6 +5,9 @@ import sys
 import img_manager as im
 from ui import Interface
 from datetime import datetime
+import deckMaker as dm
+import pandas as pd
+from printing import createPDF
 
 # Name of the Google Sheet to use as the database
 SHEET = "mtgscp"
@@ -49,6 +52,7 @@ def launchManager(args):
     app = QApplication(args)
 
     interface = Interface(save_logs=True)
+    interface.initialize()
     interface.addButton("Fix Img Paths", fixImgs)
     interface.addButton("Find Incongruencies", findWeirdge)
     interface.addButton("Color ID Stats", getColorIDStats)
@@ -178,12 +182,166 @@ def addAutoThemes():
     print("Done.")
 ### End of Functions For Manager.exe ###
 
+def launchDeckMaker(args):
+    from PySide6.QtWidgets import QApplication
+    app = QApplication(args)
+    card_names = list(Database['Title'])
+
+    global Deckmaker
+    Deckmaker = dm.DeckManager(card_names)
+    Deckmaker.addButton('Reload', reload)
+    Deckmaker.addButton('clear', Deckmaker.clearLayout)
+    Deckmaker.addButton('New Deck', createDeck)
+    Deckmaker.addButton('Load Deck', loadDeck)
+    Deckmaker.addButton('Save Deck', saveDeck)
+    Deckmaker.addButton('Add Card', addCardToDeck)
+    Deckmaker.addButton("Remove Card", removeCardFromDeck)
+    Deckmaker.addButton("Search Cards", displayCards)
+    Deckmaker.addButton("Deck Stats", getDeckStats)
+    Deckmaker.addButton("Add Basics", addLands)
+    Deckmaker.addButton("Add Ramp", addRamp)
+    Deckmaker.addButton("Set Commander", setCommander)
+    Deckmaker.addButton("Print", create_PDF)
+
+    Deckmaker.show()
+
+    sys.exit(app.exec())
+
+
+### Functions for Deck Maker ###
+def createPath(card):
+    if 'Dimension' in card['Type']:
+        directory = 'dim'
+    elif 'Token' in card['Type']:
+        directory = 'tokens'
+    elif card['Title']+'.png' in os.listdir(os.path.join('cards', 'orgs and commanders')):
+        directory = 'orgs and commanders'
+    else:
+        directory = 'scp'
+
+    return os.path.join('cards', directory, card['Title']+'.png')
+
+def getCardImg():
+    card = Database[Deckmaker.input]
+    if card is None:
+        return
+    
+    path = createPath(card)
+    return path
+
+def createDeck():
+    Deckmaker.newDeck()
+    print(f"Created new deck: {Deckmaker.deck.name}")
+
+def saveDeck():
+    if Deckmaker.deck is None:
+        print("<<<ERROR>>> No deck.")
+        return
+    
+    Deckmaker.deck.save()
+    print(f"Saved deck: {Deckmaker.deck.name}")
+
+def loadDeck():
+    Deckmaker.loadDeck(Deckmaker.input)
+    print(f"Loaded deck: {Deckmaker.deck.name}")
+
+def addCardToDeck():
+    card_path = getCardImg()
+    if card_path is None:
+        return
+    elif Deckmaker.deck is None:
+        print("<<<ERROR>>> No deck.")
+        return
+    elif Deckmaker.input in Deckmaker.deck:
+        print("<<<ERROR>>> Already in deck.")
+        return
+    card = Cards.from_data(Database[Deckmaker.input])
+    Deckmaker.deck.addCard(card, card_path)
+    Deckmaker.displayCard(card_path)
+    print(f"Added {Deckmaker.input} to deck {Deckmaker.deck.name}")
+
+def removeCardFromDeck():
+    name = Deckmaker.input
+    if Deckmaker.removeCard(name):
+        print(f"Removed {Deckmaker.input} from deck {Deckmaker.deck.name}")
+
+def displayCards():
+    args = tuple(arg.strip().replace('_', ' ') for arg in Deckmaker.input.split())
+    if len(args) != 3:
+        print("<<<ERROR>>> Search Cards Requires 3 Arguments")
+        return
+    
+    cards = Database[args]
+    card_paths = cards.apply(createPath, axis=1)
+    Deckmaker.displayMultiple(list(card_paths))
+
+def getDeckStats():
+    if Deckmaker.deck is None:
+        print("<<<ERROR>>> No deck.")
+        return
+    
+    cards = Deckmaker.deck.cards
+
+    # Filter for removal cards (assuming you want rows where a specific condition is True)
+    removal = [card for card in cards if 'Removal' in card['Themes']]
+
+    # Filter for cards with the "Card-Draw" theme
+    card_draw = [card for card in cards if 'Card-Draw' in card['Themes']]
+
+    # Filter for cards with the "Ramp" theme
+    ramp = [card for card in cards if 'Ramp' in card['Themes']]
+
+    # Filter for cards of type "Land"
+    lands = [card for card in cards if 'Land' in card['Type']]
+
+
+    print(Deckmaker.deck.name)
+    if Deckmaker.input.lower() == 'removal':
+        for card in removal: print(card)
+    elif Deckmaker.input.lower() == 'card-draw':
+        for card in card_draw: print(card)
+    elif Deckmaker.input.lower() == 'ramp':
+        for card in ramp: print(card)
+    elif Deckmaker.input.lower() == 'land':
+        for card in lands: print (card)
+    else:
+        print(f'Removal: {len(removal)}')
+        print(f'Card-Draw: {len(card_draw)}')
+        print(f'Ramp: {len(ramp)}')
+        print(f'Lands: {len(lands)}')
+        print(f'Total: {len(Deckmaker.deck)}')
+
+def addRamp():
+    Deckmaker.deck.addRamp()
+    print(f"Added ramp to {Deckmaker.deck.name}")
+
+def addLands():
+    Deckmaker.deck.addBasics()
+    print(f"Added basics to {Deckmaker.deck.name}")
+
+def setCommander():
+    commander = Cards.from_data(Database[Deckmaker.input])
+    Deckmaker.deck.setCommander(commander)
+
+def create_PDF():
+    if Deckmaker.deck is None:
+        print("<<<ERROR>>> No deck.")
+        return
+    
+    createPDF(Deckmaker.deck.name)
+    print(f"Created PDF for deck {Deckmaker.deck.name}")
+
+
 
 def test():
-    cards = Cards.from_data(Database)
-    misters = [card for card in cards if 'Mr.' in card['Title']]
-    print(misters[0]['Rules Text'].lower(), '\n\n')
-    print(misters[0].getThemesMan())
+    from PySide6.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    card_names = list(Database['Title'])
+    deckmanager = dm.DeckManager(card_names)
+    deckmanager.loadDeck('Spiders')
+    deckmanager.deck.addRamp()
+    deckmanager.deck.addBasics()
+    deckmanager.deck.save()
 
 
 if __name__ == '__main__':
@@ -193,5 +351,7 @@ if __name__ == '__main__':
         test()
     elif sys.argv[1] == 'manager':
         launchManager(sys.argv)
+    elif sys.argv[1] == 'deck-creator':
+        launchDeckMaker(sys.argv)
    
 

@@ -330,7 +330,7 @@ class Cards:
 
                 #Ramp
                 if 'Land' not in self['Type']:
-                    if anyIn(rules, 'add:') or allIn(rules, 'search', 'land'):
+                    if anyIn(rules, 'add') or allIn(rules, 'search', 'land'):
                         themes.add('Ramp')
                     elif allIn(rules, 'land', 'battlefield'):
                         themes.add('Ramp')
@@ -388,6 +388,14 @@ class Cards:
                     self.cards[name] = card
 
     @classmethod
+    def empty(cls):
+        instance = cls.__new__(cls)
+        instance.path = 'N/A'
+        instance.raw = None
+        instance.cards = {}
+        return instance
+
+    @classmethod
     def from_data(cls, df):
         """
         Creates a Cards object from a pandas DataFrame.
@@ -395,6 +403,9 @@ class Cards:
         :param df: DataFrame containing card data.
         :return: Cards object.
         """
+        if isinstance(df, pd.Series):
+            return cls.Card(df.to_dict())
+        
         if not isinstance(df, pd.DataFrame):
             df = df._df
         instance = cls.__new__(cls)
@@ -406,6 +417,12 @@ class Cards:
             instance.cards[row['Title']] = cls.Card(row.to_dict())
 
         return instance
+    
+    def addCard(self, card):
+        self.cards[card['Title']] = card
+
+    def removeCard(self, card):
+        del self.cards[card['Title']]
 
     def printCards(self):
         """
@@ -423,7 +440,7 @@ class Cards:
         """
         try:
             if isinstance(idx, int):
-                return self.cards.values()[idx]
+                return list(self.cards.values())[idx]
             else:
                 return self.cards[idx]
         except:
@@ -450,6 +467,9 @@ class Cards:
         Returns the number of cards in the collection.
         """
         return len(self.cards)
+    
+    def __contains__(self, item):
+        return item in self.cards
 
 if __name__ == '__main__':
     # Example usage of the Cards class

@@ -3,6 +3,7 @@
 *.json
 *.csv
 *.pdn
+*.pdf
 *.txt
 !requirements.txt
 *.jpg
