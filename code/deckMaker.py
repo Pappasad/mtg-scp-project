@@ -1,10 +1,10 @@
 import os
 from ui import Interface
-from cards import Cards, IDENTITY_MAP, REVERSE_MAP
+from pycards import Cards
 import shutil
 import PySide6.QtWidgets as Widgets
 from PySide6.QtGui import QPixmap
-from PySide6.QtCore import Qt, QStringListModel
+from PySide6.QtCore import Qt, QStringListModel, QThread, Signal
 from difflib import SequenceMatcher
 import numpy as np
 import pandas as pd
@@ -115,7 +115,7 @@ class Deck:
             print("No room for lands")
             return
         
-        colors = REVERSE_MAP[self.color_id]
+        colors = self.color_id.color
         lands_per_color = [num_lands_to_add//len(colors)]*len(colors)
         i = 0
         while sum(lands_per_color) < num_lands_to_add:
@@ -184,10 +184,32 @@ class Deck:
 
     def __contains__(self, item):
         return item in self.cards
+    
+    @property
+    def img_paths(self):
+        return [os.path.join(self.dir, file) for file in os.listdir(self.dir)]
 
 class DeckManager(Interface):
 
-    def __init__(self, card_names: list[str], geometry=GEOMETRY):
+    class ImageLoader(QThread):
+        signal = Signal(str, QPixmap, int, int)
+
+        def __init__(self, dm, path, row, col):
+            super().__init__()
+            self.row = row
+            self.col = col
+            self.path = path
+            self.dm = dm
+
+        def run(self):
+            pixmap = QPixmap(self.path)
+            if not pixmap.isNull():
+                pixmap.setDevicePixelRatio(self.dm.devicePixelRatioF())
+                pixmap = pixmap.scaledToWidth(CARD_WIDTH, Qt.TransformationMode.SmoothTransformation)
+                self.signal.emit(self.path, pixmap, self.row, self.col)
+                
+
+    def __init__(self, card_names: list[str], app, geometry=GEOMETRY):
         super().__init__(save_logs=False, geometry=geometry)
         self.setWindowTitle("DeckCreator")
 
@@ -223,6 +245,8 @@ class DeckManager(Interface):
         self.deck = None
         self.card_names = np.array(card_names, dtype=str)
         self.images = {}
+        self.app = app
+        self.workers = []
 
     def suggest(self, text):
         if not text.strip():
@@ -268,6 +292,7 @@ class DeckManager(Interface):
             if self.col >= MAX_COL:
                 self.col = 0
                 self.row += 1
+        self.app.processEvents()
 
     def clearLayout(self):
         while self.display_frame.count() > 0:
@@ -322,6 +347,35 @@ class DeckManager(Interface):
         self.clearLayout()
         for path in card_paths:
             self.displayCard(path)
+
+        # def cleanup(path, pixmap, row, col):
+        #     label = Widgets.QLabel(self.output_box)
+        #     label.setPixmap(pixmap)
+        #     self.display_frame.addWidget(label, row, col)
+        #     self.images[path] = label
+        #     self.app.processEvents()
+
+        # self.clearLayout()
+        # row, col = 0, 0
+        # for path in card_paths:
+        #     thread = self.ImageLoader(self, path, row, col)
+        #     thread.signal.connect(cleanup)
+        #     self.workers.append(thread)
+        #     thread.start()
+
+        #     col += 1
+        #     if col >= MAX_COL:
+        #         col = 0
+        #         row += 1
+
+        # self.row = row
+        # self.col = col
+        
+
+
+
+
+
         
 
 

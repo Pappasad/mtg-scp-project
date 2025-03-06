@@ -3,76 +3,8 @@ import re
 import sys
 import pandas as pd
 import os
-
-# Map of color identities to their descriptive names
-IDENTITY_MAP = {
-    '': 'Colorless',
-    'w': 'White',
-    'u': 'Blue',
-    'b': 'Black',
-    'r': 'Red',
-    'g': 'Green',
-    'bg': 'Golgari',
-    'br': 'Rakdos',
-    'bu': 'Dimir',
-    'bw': 'Orzhov',
-    'gr': 'Gruul',
-    'gu': 'Simic',
-    'gw': 'Selesnya',
-    'ru': 'Izzet',
-    'rw': 'Boros',
-    'uw': 'Azorius',
-    'bgr': 'Jund',
-    'bgu': 'Sultai',
-    'bgw': 'Abzan',
-    'bru': 'Grixis',
-    'brw': 'Mardu',
-    'buw': 'Esper',
-    'gru': 'Temur',
-    'grw': 'Naya',
-    'guw': 'Bant',
-    'ruw': 'Jeskai',
-    'bgru': 'Non-White',
-    'bgrw': 'Non-Blue',
-    'bruw': 'Non-Green',
-    'bguw': 'Non-Red',
-    'gruw': 'Non-Black',
-    'bgruw': 'Wubrg'
-}
-
-# Reverse mapping of color descriptions to color identities
-REVERSE_MAP = {value: key for key, value in IDENTITY_MAP.items()}
-
-# Utility functions to check substrings in strings
-def anyIn(string: str, *substrings):
-    """
-    Checks if any of the substrings are present in the given string.
-
-    :param string: The string to search.
-    :param substrings: Substrings to check for.
-    :return: True if any substring is found, False otherwise.
-    """
-    return any(sub in string for sub in substrings)
-
-def allIn(string: str, *substrings):
-    """
-    Checks if all of the substrings are present in the given string.
-
-    :param string: The string to search.
-    :param substrings: Substrings to check for.
-    :return: True if all substrings are found, False otherwise.
-    """
-    return all(sub in string for sub in substrings)
-
-def noneIn(string: str, *substrings):
-    """
-    Checks if none of the substrings are present in the given string.
-
-    :param string: The string to search.
-    :param substrings: Substrings to check for.
-    :return: True if no substrings are found, False otherwise.
-    """
-    return not anyIn(string, *substrings)
+from ci import ColorIdentity, CI
+from util import allIn, anyIn, noneIn
 
 class Cards:
     """
@@ -105,12 +37,12 @@ class Cards:
                 if isinstance(value, dict):
                     if 'name' in value:
                         if value['name'] in {'Title', 'Type', 'Power/Toughness'}:
-                            to_rem = re.findall(r'\{(.*?)\}', value['text'])
+                            to_rem = re.findall(r'(\{.*?\})', value['text'])
                             to_rem += ['?', ':']
                             for to in to_rem: 
                                 value['text'] = value['text'].replace(to, '')
-                            value['text'] = value['text'].replace('{', '')
-                            value['text'] = value['text'].replace('}', '')
+                            # value['text'] = value['text'].replace('{', '')
+                            # value['text'] = value['text'].replace('}', '')
 
                         self[value['name']] = value['text']
 
@@ -119,12 +51,22 @@ class Cards:
 
             self['Mana Value'] = self.getManaValue()
             self['Color'] = self.getColor()
-            self['Color Identity'] = self.getColorIdentity()
+            self.cid = self.getColorIdentity()
             if themes is not None:
                 if themes.lower() == 'manual':
                     self['Themes'] = self.getThemesMan()
                 elif themes.lower() == 'auto':
                     self['Themes'] = self.getThemesAuto()
+
+        def __getitem__(self, key):
+            if key == 'Color Identity':
+                return ColorIdentity(self.cid)
+            return super().__getitem__(key)
+        
+        def __contains__(self, key):
+            if key == 'Color Identity':
+                return hasattr(self, 'cid')
+            return super().__contains__(key)
 
         def getManaValue(self):
             """
@@ -187,7 +129,7 @@ class Cards:
                         ci.add(pip.lower())
 
             key = ''.join(sorted(c for c in ci))
-            ci = IDENTITY_MAP[key]
+            ci = ColorIdentity(key).name
             return ci
         
         def remFlavor(self):
@@ -230,12 +172,12 @@ class Cards:
                 rules = self.remFlavor().lower()
 
                 #Wondertainment
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Jeskai']):
+                if self['Color Identity'] in CI.JESKAI:
                     if anyIn(rules, 'wonder', "you own but don't control"):
                         themes.add('Wondertainment')
 
                 #Sarkites
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Jund']):
+                if self['Color Identity'] in CI.JUND:
                     if anyIn(rules, 'sarkic', 'sacrifice a creature', '+1/+1 counter', 'proliferate'):
                         themes.add('Sarkic')
                     elif 'Contagion' in self['Type']:
@@ -247,14 +189,14 @@ class Cards:
                             themes.add('Sarkic')
 
                 #Church of the Broken God
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Esper']):
+                if self['Color Identity'] in CI.ESPER:
                     if anyIn(rules, 'improvise', 'artifact'):
                         themes.add('Broken-God')
                     elif 'Artifact' in self['Type']:
                         themes.add('Broken-God')
 
                 #SCP Foundation
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Bant']):
+                if self['Color Identity'] in CI.BANT:
                     if anyIn(rules, 'allied anomaly', 'scientist', 'soldier'):
                         themes.add('Foundation')
                     elif 'Anomalous' in self['Type'] and noneIn(self['Type'], 'Instant', 'Sorcery'):
@@ -263,28 +205,28 @@ class Cards:
                         themes.add('Foundation')
 
                 #Chaos Insurgency
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Grixis']):
+                if self['Color Identity'] in CI.GRIXIS:
                     if anyIn(rules, 'instant', 'sorcery', 'flashback', 'sorceries'):
                         themes.add('Insurgency')
                     elif anyIn(self['Type'], 'Instant', 'Sorcery'):
                         themes.add('Insurgency')
 
                 #Are We Cool Yet?
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Temur']):
+                if self['Color Identity'] in CI.TEMUR:
                     if anyIn(rules, 'anart', 'noncreature'):
                         themes.add('AWCY?')
                     elif 'Anomalous' in self['Type'] and 'Creature' not in self['Type']:
                         themes.add('AWCY?')
 
                 #Wilson's Wildlife Solutions
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Naya']):
+                if self['Color Identity'] in CI.NAYA:
                     if anyIn(rules, 'convoke', 'tap a creature for mana', 'mana from a creature', 'nonhuman', 'non-human'):
                         themes.add("Wilsons")
                     elif 'Creature' in self['Type'] and 'Human' not in self['Type']:
                         themes.add('Wilsons')
 
                 #Marshall, Carter, and Dark
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Mardu']):
+                if self['Color Identity'] in CI.MARDU:
                     if anyIn(rules, 'treasure', 'haste'):
                         themes.add('MC&D')
                     elif 'Anomalous' in self['Type'] and (allIn(rules, 'deals damage', 'opponent') or 'any target' in rules):
@@ -293,7 +235,7 @@ class Cards:
                         themes.add('MC&D')
 
                 #The Serpent's Hand
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Sultai']):
+                if self['Color Identity'] in CI.SULTAI:
                     if anyIn(rules, 'escape', 'mill'):
                         themes.add('Serpents')
                     elif allIn(rules, 'return', 'creature card', 'graveyard'):
@@ -304,7 +246,7 @@ class Cards:
                         themes.add('Serpents')
 
                 #The Global Occult Coalition
-                if set(REVERSE_MAP[self['Color Identity']]).issubset(REVERSE_MAP['Abzan']):
+                if self['Color Identity'] in CI.ABZAN:
                     if anyIn(rules, 'non-anomalous', 'nonanomalous', 'destroy', 'exile', 'graveyard'):
                         themes.add('Goc')
                     elif noneIn(self['Type'], 'Anomalous', 'Instant', 'Sorcery'):

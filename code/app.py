@@ -1,4 +1,4 @@
-from cards import Cards, IDENTITY_MAP
+from pycards import Cards
 from database import CardDatabase
 import os
 import sys
@@ -8,6 +8,8 @@ from datetime import datetime
 import deckMaker as dm
 import pandas as pd
 from printing import createPDF
+from ci import IDENTITY_MAP
+from tts import createCardSheet
 
 # Name of the Google Sheet to use as the database
 SHEET = "mtgscp"
@@ -49,6 +51,7 @@ def launchManager(args):
     :param args: Command-line arguments.
     """
     from PySide6.QtWidgets import QApplication
+    global app
     app = QApplication(args)
 
     interface = Interface(save_logs=True)
@@ -184,11 +187,12 @@ def addAutoThemes():
 
 def launchDeckMaker(args):
     from PySide6.QtWidgets import QApplication
+    global app
     app = QApplication(args)
     card_names = list(Database['Title'])
 
     global Deckmaker
-    Deckmaker = dm.DeckManager(card_names)
+    Deckmaker = dm.DeckManager(card_names, app)
     Deckmaker.addButton('Reload', reload)
     Deckmaker.addButton('clear', Deckmaker.clearLayout)
     Deckmaker.addButton('New Deck', createDeck)
@@ -202,6 +206,7 @@ def launchDeckMaker(args):
     Deckmaker.addButton("Add Ramp", addRamp)
     Deckmaker.addButton("Set Commander", setCommander)
     Deckmaker.addButton("Print", create_PDF)
+    Deckmaker.addButton("Create TTS", create_TTS)
 
     Deckmaker.show()
 
@@ -331,17 +336,26 @@ def create_PDF():
     createPDF(Deckmaker.deck.name)
     print(f"Created PDF for deck {Deckmaker.deck.name}")
 
+def create_TTS():
+    if Deckmaker.deck is None:
+        print("<<<ERROR>>> No deck.")
+        return
+
+    name = Deckmaker.deck.name
+    paths = Deckmaker.deck.img_paths
+    createCardSheet(paths, name)
 
 
 def test():
-    from PySide6.QtWidgets import QApplication
-    app = QApplication(sys.argv)
-    card_names = list(Database['Title'])
-    deckmanager = dm.DeckManager(card_names)
-    deckmanager.loadDeck('Spiders')
-    deckmanager.deck.addRamp()
-    deckmanager.deck.addBasics()
-    deckmanager.deck.save()
+    # from PySide6.QtWidgets import QApplication
+    # app = QApplication(sys.argv)
+    # card_names = list(Database['Title'])
+    # deckmanager = dm.DeckManager(card_names)
+    # deckmanager.loadDeck('Spiders')
+    # deckmanager.deck.addRamp()
+    # deckmanager.deck.addBasics()
+    # deckmanager.deck.save()
+    launchManager(sys.argv)
 
 
 if __name__ == '__main__':

@@ -4,7 +4,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import sys
 import operator
-from cards import allIn, noneIn
+from util import allIn, noneIn
+from ci import ColorIdentity
 
 # Define the scope of access for the Google Sheets API
 SCOPE = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
@@ -126,12 +127,16 @@ class CardDatabase:
         values = values.strip().split()
 
         if op == '==':
-            func = allIn
+            func = allIn 
         elif op == '!=':
             func = noneIn
+        elif op == '<=' and key == 'Color Identity':
+            func = lambda cid, vals: ColorIdentity(cid) in ColorIdentity(vals)  
+        elif op == '>=' and key == 'Color Identity':
+            func = lambda cid, vals: ColorIdentity(vals) in ColorIdentity(cid)  
         else:
-            print(f"<<<ERROR>>> Database.py -> getAll: {op} is an invalid operator")
-            sys.exit()
+            print(f"<<<ERROR>>> Database.py -> getAll: {op} is an invalid operator with {key}")
+            return 
 
         func2apply = lambda row: func(row[key], *values)
         mask = self._df.apply(func2apply, axis=1)
@@ -192,13 +197,11 @@ class CardDatabase:
                 return self._df[OPERATORS[op](self._df[idx].astype(type(thres)), thres)]
             except Exception as e:
                 print(f"\nCan't get database by cond because '{idx} {op} {thres}'")
-                raise
         elif isinstance(idx, (int, slice)):  # Access row by index or rows by slice
             try:
                 return self._df.iloc[idx]
             except Exception as e:
                 print(f"\n<<<ERROR>>> database: Only has {len(self)} items but requested item {idx+1}\n")
-                sys.exit()
         else:  # Access row by card title
             try:
                 if idx not in self._df[self.columns[0]].to_list():
