@@ -75,8 +75,15 @@ def parseCards(md_path: str):
                 newcard['Mana Cost'] = ''
                 newcard['Color'] = 'colorless'
 
+            if 'tr' in card[1]:
+                newcard['Transform'] = card[1].split('tr ')[1].strip()
+                tidx = 2
+                if newcard['Transform'] == 'back':
+                    newcard['Mana Cost'] = ''
+            else:
+                tidx = 1
             #print(card)
-            types = re.split(r'(\{.*?\})', card[1])
+            types = re.split(r'(\{.*?\})', card[tidx])
             if len(types) > 1:
                 newcard['Type'] = types[0] + chr(8212) + types[-1]
             else:
@@ -85,12 +92,14 @@ def parseCards(md_path: str):
 
             if '[' in card[-1]:
                 newcard['Power/Toughness'] = card[-1].replace('[', '').replace(']', '')
-                rules = '\n'.join(card[2:-1])
+                rules = '\n'.join(card[1+tidx:-1])
             else:
-                rules = '\n'.join(card[2:])
-            if '{flavor}' in rules:
-                rules = rules[:rules.find('{flavor}')+1]
-            rules = rules.replace('{-}', chr(8212))
+                rules = '\n'.join(card[1+tidx:])
+
+            if 'Aftermath' in rules:
+                continue
+            # if '{flavor}' in rules:
+            #     rules = rules[:rules.find('{flavor}')+1]
             #print(rules, '\n')
             newcard['Rules Text'] = rules
 
@@ -112,9 +121,9 @@ def parseCards(md_path: str):
 if __name__ == '__main__':
     import showcase as sc
     #files = getMdFiles()
-    file = os.path.join(VAULT_DIR, 'SCP', 'SCPs new.md')
+    file = os.path.join(VAULT_DIR, 'dummy.md')#'SCP', 'Sarkic.md')
     cards = parseCards(file)
-    cards = [card for card in cards]# if card['Title'] == 'SCP-2815, Sarkic Village']
+    cards = [card for card in cards]#] if card['Title'] == 'Yaldabaoth, Primordial Goddess']
    # print(cards)
     sc.multipleShowcases(cards)
     # for file in files:

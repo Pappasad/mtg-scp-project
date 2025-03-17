@@ -11,6 +11,7 @@ import textwrap
 import re
 import easyocr
 import cv2
+from paddleocr import PaddleOCR
 
 CARD_DIM = (822, 1122)
 DPI = 300
@@ -18,6 +19,7 @@ SAVE_DIR = 'showcase'
 FRAME_DIR = 'frames'
 CROWN_DIR = os.path.join(FRAME_DIR, 'crowns')
 PIPS = set([file[:-4] for file in os.listdir(os.path.join(FRAME_DIR, 'pips'))])
+SYM_WIDTH = Image.open(os.path.join(FRAME_DIR, 'pips', '0.png')).width
 
 CROWN_MASK = Image.open(os.path.join(CROWN_DIR, 'l.png')).convert('RGBA').getchannel('A')
 PINLINE_MASK = Image.open(os.path.join(FRAME_DIR, 'pinline.png')).convert('RGBA').getchannel('A')
@@ -44,13 +46,15 @@ MIN_LENGTH = 20
 SPACING = 5
 MAX_FONT_SIZE = 43
 
-READER = easyocr.Reader(['en'], detect_network='craft')
+READER = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
 
 
 def createShowcaseImg(card: dict):
     os.makedirs(SAVE_DIR, exist_ok=True)
     if not card.get('Type'):
         print("Card has no type")
+        return
+    elif 'Dimension' in card.get('Type'):
         return
     elif not card.get('Color'):
         print(f'Card: {card["Title"]} has no color at all')
@@ -138,16 +142,17 @@ def createShowcaseImg(card: dict):
                 italics = re.split(r"(\{i\}.*?\{/i\})", text)
                 new_lines = ''
                 width = MIN_LENGTH
-                max_length = MAX_LENGTH//4 * len(lines) if len([line for line in lines if len(line) > width]) > 3 else MAX_LENGTH
+                max_length = MAX_LENGTH//4 * len([line for line in lines if len(line) > width]) if len([line for line in lines if len(line) > width]) > 3 else MAX_LENGTH
+                sep = '\n' if len(lines) > 3 else '\n\n'
                 for line in lines:
                     if len(line) <= width:
-                        new_lines += line + '\n\n'
+                        new_lines += line + sep
                     else:
                         while len(line) > width:
                             width += 1
                             if width >= max_length:        
                                 break
-                        new_lines += '\n'.join(textwrap.wrap(line, width=width)) + '\n\n'
+                        new_lines += '\n'.join(textwrap.wrap(line, width=width)) + sep
                 text = new_lines
 
                 lower = img.height - 120
@@ -155,6 +160,7 @@ def createShowcaseImg(card: dict):
                     lower -= (img.height - pt_box[1])
                 bbox = pos + [MAX_WIDTH, lower]
 
+                text = text.replace('{-}', '----')
                 font = getDynamicFont(text, bbox, FONT_MAP[metric])
                 temp = img.copy()
                 tempdraw = ImageDraw.Draw(temp)
@@ -166,6 +172,7 @@ def createShowcaseImg(card: dict):
                         text = text.replace(s, '   ')
                     else:
                         text = text.replace(s, '')
+                text = text.replace('----', chr(8212))
                 draw.text(pos, text, font=font, fill='black', spacing=SPACING)
                 for coords, pip in syms.items():
                     # print(pip)
@@ -237,18 +244,19 @@ def getSpecialChar(char, font, rules=False) -> Image.Image:
     bbox = font.getbbox('O')
     width, height = bbox[2] - bbox[0], bbox[3] - bbox[1]
     if rules:
-        img = img.resize((int(width), int(height*1.1)), Image.Resampling.LANCZOS)
+        img = img.resize((int(width), int(height*1.2)), Image.Resampling.LANCZOS)
     else:
-        img = img.resize((int(width*1.3), int(height*1.3)), Image.Resampling.LANCZOS)
+        img = img.resize((int(width*1.5), int(height*1.5)), Image.Resampling.LANCZOS)
 
     return img
 
 def findSymbols(symbols, img, font):
+    #img.show()
     img = np.array(img)
-    results = READER.readtext(img)
+    results = READER.ocr(img)[0]
     coords = {}
-
-    for (bbox, text, prob) in results:
+    #print(len(results))
+    for bbox, (text, prob) in results:
         bbox = np.array(bbox, dtype=int)
         # Extract full bounding box
         (top_left, top_right, bottom_right, bottom_left) = bbox
@@ -269,21 +277,33 @@ def findSymbols(symbols, img, font):
             #text = text.replace(brackets[b], newb)
 
         # syms = [sym for sym in symbols if sym in text]
-        # print(syms)
+        #print(text, '\n')
+        shifted = False
         if '{i}' in text or '{/i}' in text:
             text = text.replace('{i}','').replace('{/i}','')
         for symbol in syms:
             if symbol.replace('{','').replace('}','') in PIPS:
                 sx = x1
+                after_pip = False
+                char = ''
                 for char in text[:text.find(symbol)]:
-                    box = font.getbbox(char)
-                    sx += box[2] - box[0]
-                if sx != x1:
-                    sx += 5
+                    if char == '#':
+                        sym = getSpecialChar('0', font, rules=True)
+                        sx += sym.width
+                        after_pip = True
+                    else:
+                        box = font.getbbox(char)
+                        sx += box[2] - box[0]
+                        after_pip = False
+                if sx != x1 and char != '"' and not after_pip and not shifted:
+                    sx += 3
+                    shifted = True
+                elif shifted:
+                    sx += 3
 
-                sym_bbox = (int(sx), int(y1))
+                sym_bbox = (int(sx), int(y1)+3)
                 coords[sym_bbox] = symbol.replace('{','').replace('}','')
-                text = text.replace(symbol, '  ', 1)
+                text = text.replace(symbol, '#', 1)
                 print(f"Detected: '{symbol}' at {sym_bbox}")
                 #print('\t', text)
 
@@ -294,6 +314,7 @@ def findSymbols(symbols, img, font):
 def multipleShowcases(cards):
     for card in cards:
         print(card['Title'])
+        #createShowcaseImg(card)
         try:
             createShowcaseImg(card)
         except:
