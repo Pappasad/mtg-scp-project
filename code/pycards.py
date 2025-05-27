@@ -88,7 +88,7 @@ class Cards:
                         mv += int(pip)  # Add numerical values directly
                     elif '2' in pip:
                         mv += 2  # Hybrid mana with "2"
-                    else:
+                    elif pip.lower() not in {'x', 'y', 'z'}:
                         mv += 1  # Other single-mana symbols add 1
             return mv
 
@@ -103,7 +103,12 @@ class Cards:
                 cost = self['Mana Cost']
                 pip_set = set(re.findall(r'\{(.*?)\}', cost))
                 for pip in pip_set:
-                    if pip.lower() in {'w', 'u', 'b', 'r', 'g'}:
+                    if len(pip) > 1:
+                        for p in pip:
+                            if p.lower() in {'w', 'u', 'b', 'r', 'g'}:
+                                color = color.replace('Colorless', '')
+                                color += p.upper()
+                    elif pip.lower() in {'w', 'u', 'b', 'r', 'g'}:
                         color = color.replace('Colorless', '')
                         color += pip.upper()
             return color
@@ -119,13 +124,21 @@ class Cards:
                 cost = self['Mana Cost']
                 pip_set = set(re.findall(r'\{(.*?)\}', cost))
                 for pip in pip_set:
-                    if pip.lower() in {'w', 'u', 'b', 'r', 'g'}:
+                    if len(pip) > 1:
+                        for p in pip:
+                            if p.lower() in {'w', 'u', 'b', 'r', 'g'}:
+                                ci.add(p.lower())
+                    elif pip.lower() in {'w', 'u', 'b', 'r', 'g'}:
                         ci.add(pip.lower())
             if 'Rules Text' in self:
                 rules = self['Rules Text']
                 pip_set = set(re.findall(r'\{(.*?)\}', rules))
                 for pip in pip_set:
-                    if pip.lower() in {'w', 'u', 'b', 'r', 'g'}:
+                    if len(pip) > 1:
+                        for p in pip:
+                            if p.lower() in {'w', 'u', 'b', 'r', 'g'}:
+                                ci.add(p.lower())
+                    elif pip.lower() in {'w', 'u', 'b', 'r', 'g'}:
                         ci.add(pip.lower())
 
             key = ''.join(sorted(c for c in ci))

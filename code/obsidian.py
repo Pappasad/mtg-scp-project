@@ -2,8 +2,10 @@ import os
 import sys
 import frontmatter
 import re
+from tkinter import Tk, filedialog
 
 VAULT_DIR = 'Remote'
+TRANSFORM_MKR = 'transform'
 
 cur = os.getcwd()
 while not VAULT_DIR in os.listdir(cur):
@@ -39,78 +41,82 @@ def parseCards(md_path: str):
             continue
 
         e = s
-        empty = True
         while e < len(lines):
-            if lines[e].strip():
-                empty = True
-            else:
-                if empty:
-                    break
-                else:
-                    empty = True
-            
+            if not lines[e].strip():
+                break 
             e += 1
-        card = [line for line in lines[s:e] if line]
+
+        card = lines[s:e]
         cards.append(card)
         s = e
 
-    newcards = []
-    for card in cards:
+    real_cards = []
+    for card_lines in cards:
         try:
-            newcard = {}
-            splitdex = card[0].find('{')
-            if splitdex > 0:
-                newcard['Title'] = card[0][:splitdex].strip()
-                newcard['Mana Cost'] = card[0][splitdex:].strip().upper()
+            card = {}
+            name_cost_split_idx = card_lines[0].find('{')
+            if name_cost_split_idx > 0:
+                #Split title and mana cost
+                card['Title'] = card_lines[0][:name_cost_split_idx].strip()
+                card['Mana Cost'] = card_lines[0][name_cost_split_idx:].strip().upper()
+
+                #Set color
                 color = ''
-                for c in newcard['Mana Cost']:
+                for c in card['Mana Cost']:
                     if str.isalpha(c) and c not in color and c.lower() in {'w', 'u', 'b', 'r', 'g'}:
                         color += c.upper()
                 if color:
-                    newcard['Color'] = ''.join(sorted(color))
+                    card['Color'] = ''.join(sorted(color))
                 else:
-                    newcard['Color'] = 'colorless'
-            else:
-                newcard['Title'] = card[0].strip()
-                newcard['Mana Cost'] = ''
-                newcard['Color'] = 'colorless'
+                    card['Color'] = 'colorless'
+            else: 
+                #if card has no mana cost
+                card['Title'] = card_lines[0].strip()
+                card['Mana Cost'] = ''
+                card['Color'] = 'colorless'
+                color = ''
 
-            if 'tr' in card[1]:
-                newcard['Transform'] = card[1].split('tr ')[1].strip()
-                tidx = 2
-                if newcard['Transform'] == 'back':
-                    newcard['Mana Cost'] = ''
+            if TRANSFORM_MKR in card_lines[1]:
+                #if card is a transform
+                card['Transform'] = card_lines[1][card_lines[1].rfind(TRANSFORM_MKR) + len(TRANSFORM_MKR):].strip().lower()
+                typeline_idx = 2
+                if card.get('Transform') and 'back' in card['Transform']:
+                    #if its the back side
+                    card['Mana Cost'] = ''
+                    for c in card['Transform'][card['Transform'].find('{'):]:
+                        if str.isalpha(c) and c not in color and c.lower() in {'w', 'u', 'b', 'r', 'g'}:
+                            color += c.upper()
+                        if color:
+                            card['Color'] = ''.join(sorted(color))
             else:
-                tidx = 1
-            #print(card)
-            types = re.split(r'(\{.*?\})', card[tidx])
+                typeline_idx = 1
+ 
+            types = re.split(r'(\{.*?\})', card_lines[typeline_idx])
             if len(types) > 1:
-                newcard['Type'] = types[0] + chr(8212) + types[-1]
+                card['Type'] = types[0] + chr(8212) + types[-1]
             else:
-                newcard['Type'] = types[0]
+                card['Type'] = types[0]
+            if card.get('Transform') and 'back' in card['Transform']:
+                card['Type'] = '{right88}' + card['Type']
 
-
-            if '[' in card[-1]:
-                newcard['Power/Toughness'] = card[-1].replace('[', '').replace(']', '')
-                rules = '\n'.join(card[1+tidx:-1])
+            if '[' in card_lines[-1]:
+                card['Power/Toughness'] = card_lines[-1].replace('[', '').replace(']', '')
+                rules = '\n'.join(card_lines[1+typeline_idx:-1])
             else:
-                rules = '\n'.join(card[1+tidx:])
+                rules = '\n'.join(card_lines[1+typeline_idx:])
 
-            if 'Aftermath' in rules:
-                continue
-            # if '{flavor}' in rules:
-            #     rules = rules[:rules.find('{flavor}')+1]
-            #print(rules, '\n')
-            newcard['Rules Text'] = rules
-
-            newcards.append(newcard)
-        except:
-            print(f'ERROR ON {card}')
+            card['Rules Text'] = rules
+            real_cards.append(card)
+        except Exception as e:
+            print(f'ERROR ON {card_lines[0]}:', e)
             continue
 
-    return newcards
+    return real_cards
 
-
+root = Tk()
+root.withdraw()
+def selectMd():
+    return filedialog.askopenfilenames(title='Select Markdowns', initialdir=VAULT_DIR, filetypes=[("Markdown files", "*.md")])
         
 
 
@@ -119,21 +125,10 @@ def parseCards(md_path: str):
     
 
 if __name__ == '__main__':
-    import showcase as sc
-    #files = getMdFiles()
-    file = os.path.join(VAULT_DIR, 'dummy.md')#'SCP', 'Sarkic.md')
-    cards = parseCards(file)
-    cards = [card for card in cards]#] if card['Title'] == 'Yaldabaoth, Primordial Goddess']
-   # print(cards)
-    sc.multipleShowcases(cards)
-    # for file in files:
-    #     try:
-    #         cards = parseCards(file)
-    #         sc.multipleShowcases(cards)
-    #     except:
-    #         print("Can't do", file)
-    #         continue
-        
+    files = getMdFiles('Test')
+    cards = parseCards(files[0])
+    for card in cards:
+        print(card)
 
     
 
