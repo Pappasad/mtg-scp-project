@@ -1,5 +1,6 @@
 *.png
 *.cardconjurer
+!template.cardconjurer
 *.json
 *.csv
 *.pdn

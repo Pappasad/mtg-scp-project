@@ -78,16 +78,26 @@ def parseCards(md_path: str):
 
             if TRANSFORM_MKR in card_lines[1]:
                 #if card is a transform
-                card['Transform'] = card_lines[1][card_lines[1].rfind(TRANSFORM_MKR) + len(TRANSFORM_MKR):].strip().lower()
+                transform = card_lines[1][card_lines[1].rfind(TRANSFORM_MKR) + len(TRANSFORM_MKR):].strip().lower()
                 typeline_idx = 2
-                if card.get('Transform') and 'back' in card['Transform']:
+                if 'back' in transform:
                     #if its the back side
                     card['Mana Cost'] = ''
-                    for c in card['Transform'][card['Transform'].find('{'):]:
+                    for c in transform[transform.find('{'):]:
+                        if c == '}':
+                            break
                         if str.isalpha(c) and c not in color and c.lower() in {'w', 'u', 'b', 'r', 'g'}:
                             color += c.upper()
                         if color:
                             card['Color'] = ''.join(sorted(color))
+                    
+                transform = re.sub(r'\{.*?\}', '', transform).strip().lower()
+
+                transform = transform.split()
+                card['Transform'] = transform[0]
+                if 'front' in transform and len(transform) > 1:
+                    card['Reverse PT'] = transform[1]
+
             else:
                 typeline_idx = 1
  
@@ -96,7 +106,7 @@ def parseCards(md_path: str):
                 card['Type'] = types[0] + chr(8212) + types[-1]
             else:
                 card['Type'] = types[0]
-            if card.get('Transform') and 'back' in card['Transform']:
+            if card.get('Transform', '') == 'back':
                 card['Type'] = '{right88}' + card['Type']
 
             if '[' in card_lines[-1]:
