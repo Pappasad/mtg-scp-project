@@ -3,6 +3,8 @@ import os
 import obsidian as ob
 import copy
 import sys
+from pycards import Cards
+from util import int2Rom
 
 TEMPLATE_PATH = "template.cardconjurer"
 OUTPUT_DIR = "custom_cc"
@@ -14,6 +16,8 @@ TR_FRONT_DIR = "/img/frames/m15/transform/ub"
 TR_BACK_DIR = "/img/frames/m15/transform/ub/new"
 TR_CROWN_DIR = "/img/frames/m15/transform/crowns/ub"
 TRANSFORM_PIP_DIR = "img/frames/m15/ciPips"
+SAGA_DIR = "/img/frames/saga/ub"
+SAGA_CREATURE_DIR = "/img/frames/saga/creature/ub"
 
 
 
@@ -32,16 +36,38 @@ for temp in template_data:
         Template['Front'] = temp
     elif temp.get('key', '') == 'Back':
         Template['Back'] = temp
+    elif temp.get('key', '') == 'Saga':
+        Template['Saga'] = temp
+    elif temp.get('key', '') == 'Saga Creature':
+        Template['Saga Creature'] = temp
+    elif temp.get('key', '') == 'Saga Creature Front':
+        Template['Saga Creature Front'] = temp
+    elif temp.get('key', '') == 'Saga Creature Back':
+        Template['Saga Creature Back'] = temp
+    elif temp.get('key', '') == 'Vehicle':
+        Template['Vehicle'] = temp
 
 def fillCard(card: dict):
     isSCP = 'SCP' in card.get('Title', '')
 
-    if card.get('Transform', '') == 'front':
+    if 'saga' in card.get('Type' ,'').lower():
+        if 'creature' in card.get('Type' ,'').lower():
+            if card.get('Transform', '') == 'front':
+                template = Template['Saga Creature Front']
+            elif card.get('Transform', '') == 'back':
+                template = Template['Saga Creature Back']
+            else:
+                template = Template['Saga Creature']
+        else:
+            template = Template['Saga']
+    elif card.get('Transform', '') == 'front':
         template = Template['Front']
     elif card.get('Transform', '') == 'back':
         template = Template['Back']
     elif isSCP:
         template = Template[SCP_VER]
+    elif 'vehicle' in card.get('Type', '').lower():
+        template = Template['Vehicle']
     else:
         template = Template[DEF_VER]
 
@@ -51,18 +77,27 @@ def fillCard(card: dict):
     text["title"]["text"] = card.get("Title", "")
     text["mana"]["text"] = card.get("Mana Cost", "")
     text["type"]["text"] = card.get("Type", "")
-    text["rules"]["text"] = card.get("Rules Text", "")
-    text["pt"]["text"] = card.get("Power/Toughness", "") if "Power/Toughness" in card else ""
+    if card.get('Rules Text', ''):
+        text["rules"]["text"] = card.get("Rules Text", "")
 
     layout['data']['frames'] = []
 
     if 'creature' in card.get('Type', '').lower() or 'vehicle' in card.get('Type', '').lower():
-        if isSCP:
-            layout['data']['frames'].append(getPTFrame(card, True))
-        else:
-            layout['data']['frames'].append(getPTFrame(card, False))
+        text["pt"]["text"] = card.get("Power/Toughness", "")
+        layout['data']['frames'].append(getPTFrame(card, isSCP))
 
-    if card.get('Reverse PT', ''):
+    if 'saga' in card.get('Type', '').lower():
+        chapters = card['Chapters']
+        for i, chapter in enumerate(chapters.values()):
+            if i > 4:
+                break
+            text[f'ability{i}']['text'] = chapter
+        if card.get('Transform', '') == 'front':
+            text['reminder']['text'] = "{i}As this Saga enters and after your draw step, add a lore counter.{/i}"
+        else:
+            last_chap = list(chapters.keys())[-1]
+            text['reminder']['text'] = f"{{i}}As this Saga enters and after your draw step, add a lore counter. Sacrifice after {last_chap}.{{/i}}"
+    elif card.get('Reverse PT', ''):
         text['reminder']['text'] = card.get('Reverse PT', '')
 
     if card.get('Transform', '') == 'back':
@@ -80,7 +115,7 @@ def fillCard(card: dict):
 
     frame = getCardFrame(card)
     layout['version'] = frame['version']
-    layout['data']['frames'] += getFrameColor(card)
+    layout['data']['frames'].extend(getFrameColor(card))
 
     return {"key": card.get("Title", "unnamed"), "data": layout["data"]}
 
@@ -168,6 +203,8 @@ def getLegendCrown(card: dict, isSCP):
     else:
         # Single-color crown or gold
         suffix = color_map.get(color.upper(), 'm')
+        if suffix == 'a' and 'land' in card.get('Type', '').lower():
+            suffix = 'l'
         crowns.append({
             "name": f"{color_name_map.get(color.upper(), 'Multicolored')} Legend Crown",
             "src": os.path.join(src, suffix+'.png') if not regular else os.path.join(src, 'm15Crown'+suffix.upper()+'.png'),
@@ -197,6 +234,9 @@ def getPTFrame(card: dict, isSCP):
         if 'land' in card.get('Type', '').lower():
             color = 'l'
             color_name = 'Land'
+        elif 'vehicle' in card.get('Type', '').lower():
+            color = 'v'
+            color_name = 'Vehicle'
         elif color == "W":
             color = 'w'
             color_name = 'White'
@@ -224,7 +264,7 @@ def getPTFrame(card: dict, isSCP):
             src = os.path.join(frame, 'pt'+color.upper()+'.png')
         elif isSCP:
             frame = FRAME_SCP_PATH
-            src = os.path.join(frame, 'pt', color+'.png')
+            src = os.path.join(frame, 'pt.png')
         else:
             frame = FRAME_BASE_PATH
             src = os.path.join(frame, 'pt', color+'.png')
@@ -271,8 +311,25 @@ def getFrameColor(card: dict):
         color = 'm'
         color_name = 'Multicolored'
 
-
-    if card.get('Transform', ''):
+    frames = []
+    if 'saga' in card.get('Type', '').lower():
+        color_name += ' Saga '
+        if 'creature' in card.get('Type', '').lower():
+            color_name += ' Creature '
+            if card.get('Transform', ''):
+                frame = os.path.join(SAGA_CREATURE_DIR, f'transform-{card["Transform"]}')
+                color_name += card['Transform']
+            else:
+                frame = SAGA_CREATURE_DIR
+            
+            src = f"{frame}/{color}.png"
+        else:
+            frame = SAGA_DIR
+            if 'land' in card.get('Type', ''):
+                src = f"{frame}/{color}.png"
+            else:
+                src = f"{frame}/sagaFrame{color.upper()}.png"
+    elif card.get('Transform', ''):
         if card.get('Transform', '') == 'front':
             frame = TR_FRONT_DIR
             color_name += ' Front '
@@ -286,12 +343,24 @@ def getFrameColor(card: dict):
         src = os.path.join(frame, card.get('Transform')+color.upper()+'.png')
     elif 'SCP' in card.get('Title', ''):
         frame = FRAME_SCP_PATH
+        if color == 'l' or color == 'v':
+            color = 'a'
         src = f"{frame}/{color}.png"
     else:
         frame = os.path.join(FRAME_BASE_PATH, 'regular')
         src = f"{frame}/{color}.png"
+        if 'artifact' in card.get('Type', '').lower():
+            mask_path = "/img/frames/m15/regular/m15MaskFrame.png"
+            if 'vehicle' in card.get('Type', '').lower():
+                mask = 'v'
+                name = 'Vehicle'
+            else:
+                mask = 'a'
+                name = 'Artifact'
+            frames.append({"name": name + 'Mask', "src": os.path.join(frame, mask+'.png'), "masks": [{"src": mask_path, "name": "Frame"}]})
 
-    return [{"name": color_name + 'Frame', "src": src, "masks": []}]
+    frames.append({"name": color_name + 'Frame', "src": src, "masks": []})
+    return frames
 
     # if color == "W":
     #     return [{"name": "White Frame", "src": f"{frame}/w.png", "masks": []}]
@@ -310,7 +379,8 @@ def getFrameColor(card: dict):
     
 def getPinlineColor(card: dict):
     color = ''.join(sorted(card.get('Color', '')))
-
+    mask_path = "/img/frames/m15/regular/m15MaskPinline.png"
+    mask_path_r = "/img/frames/maskRightHalf.png"
 
     if card.get('Transform', ''):
         if card.get('Transform', '') == 'front':
@@ -333,26 +403,42 @@ def getPinlineColor(card: dict):
         "G": "g"
     }
 
+    if 'saga' in card.get('Type', '').lower():
+        if 'creature' in card.get('Type', '').lower():
+            frame = SAGA_CREATURE_DIR
+            if card.get('Transform', ''):
+                frame = os.path.join(frame, f'transform-{card["Transform"].lower()}')
+                mask_path = f"/img/frames/saga/creature/transform-{card['Transform'].lower()}/masks/pinline.png"
+            else:
+                mask_path = "/img/frames/saga/creature/masks/sagaMaskPinline.png"
+        else:
+            frame = SAGA_DIR
+            mask_path = "/img/frames/saga/sagaMaskPineline.png"
+
     frames = []
     if len(color) == 2 and all(c in color_map for c in color):
         left_color = color_map[color[0]]
         right_color = color_map[color[1]]
 
-        if card.get('Transform', ''):
-            left_color = left_color.upper()
-            right_color = right_color.upper()
+        if 'saga' in card.get('Type', '').lower():
+            if 'creature' not in card.get('Type', '').lower() and 'land' not in card.get('Type', '').lower():
+                left_color = 'sagaFrame'+left_color.upper()
+                right_color = 'sagaFrame'+right_color.upper()
+        elif card.get('Transform', ''):
+            left_color = card.get('Transform', '')+left_color.upper()
+            right_color = card.get('Transform', '')+right_color.upper()
 
         left = {
             "name": f"{color[1]} Pinline",
-            "src": f"{frame}/{card.get('Transform', '')+right_color}.png",
-            "masks": [{"src": "/img/frames/m15/regular/m15MaskPinline.png", "name": "Pinline"}]
+            "src": f"{frame}/{right_color}.png",
+            "masks": [{"src": mask_path, "name": "Pinline"}]
         }
         right = {
             "name": f"{color[0]} Pinline (Right)",
-            "src": f"{frame}/{card.get('Transform', '')+left_color}.png",
+            "src": f"{frame}/{left_color}.png",
             "masks": [
-                {"src": "/img/frames/m15/regular/m15MaskPinline.png", "name": "Pinline"},
-                {"src": "/img/frames/maskRightHalf.png", "name": "Right Half"}
+                {"src": mask_path, "name": "Pinline"},
+                {"src": mask_path_r, "name": "Right Half"}
             ]
         }
 
@@ -400,10 +486,44 @@ def chooseAndExport():
     for file in files:
         exportNewCC(file)
 
+def changeCards():
+    existing, new = ob.selectCCAndMd()
+    if not new or not existing:
+        print("not selected")
+        return
+    with open(existing, 'r', encoding='utf-8') as f:
+        cards = json.load(f)
+    new_cards = {card['Title']: card for card in ob.parseCards(new)}
+
+    fixed = 0
+    for card in cards:
+        title = card['key']
+        if title in new_cards:
+            # print("Before: ", card['data']['text'])
+            fixed += 1
+            for k, v in new_cards[title].items():
+                if k == 'Rules Text':
+                    k = 'rules'
+                if k.lower() in card['data']['text']:
+                    card['data']['text'][k.lower()]['text'] = v
+            #print("After: ", card['data']['text'])
+
+    with open(existing, "w", encoding="utf-8") as f:
+        json.dump(cards, f, indent=2)
+
+    if fixed:
+        print(f"Fixed {fixed} cards in {os.path.basename(existing)} using {os.path.basename(new)}")
+
+
+
+
+    
+
 
 
 if __name__ == "__main__":
     chooseAndExport()
+    #changeCards()
     # files = ob.getMdFiles("Test")
     # for file in files:
     #     all_cards = []

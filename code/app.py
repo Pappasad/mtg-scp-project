@@ -10,6 +10,7 @@ import pandas as pd
 from printing import createPDF
 from ci import IDENTITY_MAP
 from tts import createCardSheet
+import ccInterface as ccI
 
 # Name of the Google Sheet to use as the database
 SHEET = "mtgscp"
@@ -65,12 +66,30 @@ def launchManager(args):
     interface.addButton("Reload", reload)
     interface.addButton("Type Stats", getTypeStats)
     interface.addButton('Get Card', getCardInfo, interface)
+    interface.addButton("Change Cards", changeCards)
+    interface.addButton("Create Cards", createNewCards)
 
     interface.show()
 
     sys.exit(app.exec())
 
 ### Functions For Manager.exe ###
+def changeCards():
+    print(timeString())
+    try:
+        ccI.changeCards()
+    except Exception as e:
+        print(e)
+    print("Done.")
+
+def createNewCards():
+    print(timeString())
+    try:
+        ccI.chooseAndExport()
+    except Exception as e:
+        raise(e)
+    print("Done.")
+
 def getCardInfo(interface):
     print(timeString())
     try:

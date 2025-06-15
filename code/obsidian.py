@@ -3,6 +3,7 @@ import sys
 import frontmatter
 import re
 from tkinter import Tk, filedialog
+from util import int2Rom
 
 VAULT_DIR = 'Remote'
 TRANSFORM_MKR = 'transform'
@@ -76,6 +77,9 @@ def parseCards(md_path: str):
                 card['Color'] = 'colorless'
                 color = ''
 
+            if any(c['Title'] == card['Title'] for c in real_cards):
+                continue
+
             if TRANSFORM_MKR in card_lines[1]:
                 #if card is a transform
                 transform = card_lines[1][card_lines[1].rfind(TRANSFORM_MKR) + len(TRANSFORM_MKR):].strip().lower()
@@ -115,11 +119,37 @@ def parseCards(md_path: str):
             else:
                 rules = '\n'.join(card_lines[1+typeline_idx:])
 
+            new_lines = []
+            for line in rules.splitlines():
+                if line[0] == '-':
+                    new_lines.append(chr(8226) + line[1:])
+                else:
+                    new_lines.append(line)
+            rules = '\n'.join(line for line in new_lines)
+
+
+            ###SAGA detection  
+            if 'saga' in card.get('Type', '').lower():
+                chapters = {}
+                chapter_pattern = re.compile(r'^(I{1,3}|IV|V|VI{0,3}|IX|X):\s*(.*)', re.IGNORECASE)
+                chapter = None
+                for line in rules.splitlines():
+                    match = chapter_pattern.match(line.strip())
+                    if match:
+                        chapter = match.group(1).upper()
+                        chapters[chapter] = match.group(2)
+                    elif chapter:
+                        chapters[chapter] += '\n' + line.strip()
+                rules = rules[:rules.find('I') if rules.find('I') != -1 else 99999999]
+                card['Chapters'] = chapters
+            
+            if rules and rules[-1] == '\n':
+                rules = rules[:-1]
             card['Rules Text'] = rules
             real_cards.append(card)
         except Exception as e:
             print(f'ERROR ON {card_lines[0]}:', e)
-            continue
+            raise
 
     return real_cards
 
@@ -128,11 +158,10 @@ root.withdraw()
 def selectMd():
     return filedialog.askopenfilenames(title='Select Markdowns', initialdir=VAULT_DIR, filetypes=[("Markdown files", "*.md")])
         
-
-
-
-
-    
+def selectCCAndMd():
+    cc = filedialog.askopenfilename(title='Select Existing Cards To Replace', initialdir='cc', filetypes=[("Cardconjurer file", "*.cardconjurer")])
+    md = filedialog.askopenfilename(title="Select Replacement Cards", initialdir=VAULT_DIR, filetypes=[("Markdown file", "*.md")])
+    return cc, md
 
 if __name__ == '__main__':
     files = getMdFiles('Test')
