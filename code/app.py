@@ -11,12 +11,22 @@ from printing import createPDF
 from ci import IDENTITY_MAP
 from tts import createCardSheet
 import ccInterface as ccI
+from imageGen import ImageGenGUI
 
 # Name of the Google Sheet to use as the database
 SHEET = "mtgscp"
 
 # Directory for custom card data
 CC_DIR = 'cc'
+
+cur = os.getcwd()
+while not 'cardconjurer-master' in os.listdir(cur):
+    next = os.path.dirname(cur)
+    if next == cur:
+        print("Could not find cc master.")
+        sys.exit(1)
+    cur = next
+CC_MASTER_DIR = os.path.join(cur, 'cardconjurer-master')
 
 # Themes used in the application
 THEMES = ['Sarkic', 'Wondertainment', 'Foundation', 'Goc', 'AWCY?', 'Fifthist', 'MC&D', 'Insurgency', 'Broken-God', 'Serpents', 'Removal', 'Ramp', 'Card-Draw']
@@ -55,6 +65,7 @@ def launchManager(args):
     global app
     app = QApplication(args)
 
+    global interface
     interface = Interface(save_logs=True)
     interface.initialize()
     interface.addButton("Fix Img Paths", fixImgs)
@@ -68,12 +79,15 @@ def launchManager(args):
     interface.addButton('Get Card', getCardInfo, interface)
     interface.addButton("Change Cards", changeCards)
     interface.addButton("Create Cards", createNewCards)
+    interface.addButton("Generate Images", launchImgGen, args)
 
     interface.show()
 
     sys.exit(app.exec())
 
-### Functions For Manager.exe ###
+
+
+
 def changeCards():
     print(timeString())
     try:
@@ -231,7 +245,6 @@ def launchDeckMaker(args):
 
     sys.exit(app.exec())
 
-
 ### Functions for Deck Maker ###
 def createPath(card):
     if 'Dimension' in card['Type']:
@@ -365,6 +378,26 @@ def create_TTS():
     createCardSheet(paths, name)
 
 
+def launchImgGen(args):
+    from PySide6.QtWidgets import QApplication
+    global IMGEN
+    IMGEN = ImageGenGUI()
+    IMGEN.show()
+    global app
+
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(args)
+        sys.exit(app.exec())
+    else:
+        interface.close()
+        pass
+
+    
+
+    
+
+
 def test():
     # from PySide6.QtWidgets import QApplication
     # app = QApplication(sys.argv)
@@ -375,6 +408,7 @@ def test():
     # deckmanager.deck.addBasics()
     # deckmanager.deck.save()
     launchManager(sys.argv)
+    #launchImgGen(sys.argv)
 
 
 if __name__ == '__main__':
@@ -386,5 +420,7 @@ if __name__ == '__main__':
         launchManager(sys.argv)
     elif sys.argv[1] == 'deck-creator':
         launchDeckMaker(sys.argv)
+    elif sys.argv[1] == 'generate':
+        launchImgGen(sys.argv)
    
 

@@ -19,3 +19,5 @@ fonts/
 logs/
 symbolsetc/
 cards/*
+training/*
+Generated/
